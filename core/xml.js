@@ -178,99 +178,97 @@ Blockly.Xml.allFieldsToDom_ = function(block, element) {
  * @param {boolean=} opt_noId True if the encoder should skip the block ID.
  * @return {!Element} Tree of XML elements.
  */
-Blockly.Xml.blockToDom = function(block, opt_noId) {
-  var element =
-      Blockly.Xml.utils.createElement(block.isShadow() ? 'shadow' : 'block');
-  element.setAttribute('type', block.type);
-  if (!opt_noId) {
-    element.setAttribute('id', block.id);
-  }
-  if (block.mutationToDom) {
-    // Custom data for an advanced block.
-    var mutation = block.mutationToDom();
-    if (mutation && (mutation.hasChildNodes() || mutation.hasAttributes())) {
-      element.appendChild(mutation);
-    }
-  }
+Blockly.Xml.blockToDom = function (block, opt_noId) {
+	var element = goog.dom.createDom(block.isShadow() ? 'shadow' : 'block');
+	element.setAttribute('type', block.type);
+	if (!opt_noId) {
+		element.setAttribute('id', block.id);
+	}
+	if (block.mutationToDom) {
+		// Custom data for an advanced block.
+		var mutation = block.mutationToDom();
+		if (mutation && (mutation.hasChildNodes() || mutation.hasAttributes())) {
+			element.appendChild(mutation);
+		}
+	}
 
-  Blockly.Xml.allFieldsToDom_(block, element);
+	Blockly.Xml.allFieldsToDom_(block, element);
 
-  var commentText = block.getCommentText();
-  if (commentText) {
-    var commentElement = Blockly.Xml.utils.createElement('comment');
-    commentElement.appendChild(Blockly.Xml.utils.createTextNode(commentText));
-    if (typeof block.comment == 'object') {
-      commentElement.setAttribute('pinned', block.comment.isVisible());
-      var hw = block.comment.getBubbleSize();
-      commentElement.setAttribute('h', hw.height);
-      commentElement.setAttribute('w', hw.width);
-    }
-    element.appendChild(commentElement);
-  }
+	var commentText = block.getCommentText();
+	if (commentText) {
+		var commentElement = goog.dom.createDom('comment', null, commentText);
+		if (typeof block.comment == 'object') {
+			commentElement.setAttribute('pinned', block.comment.isVisible());
+			var hw = block.comment.getBubbleSize();
+			commentElement.setAttribute('h', hw.height);
+			commentElement.setAttribute('w', hw.width);
+		}
+		element.appendChild(commentElement);
+	}
 
-  if (block.data) {
-    var dataElement = Blockly.Xml.utils.createElement('data');
-    dataElement.appendChild(Blockly.Xml.utils.createTextNode(block.data));
-    element.appendChild(dataElement);
-  }
+	if (block.data) {
+		var dataElement = goog.dom.createDom('data', null, block.data);
+		element.appendChild(dataElement);
+	}
 
-  for (var i = 0, input; input = block.inputList[i]; i++) {
-    var container;
-    var empty = true;
-    if (input.type == Blockly.DUMMY_INPUT) {
-      continue;
-    } else {
-      var childBlock = input.connection.targetBlock();
-      if (input.type == Blockly.INPUT_VALUE) {
-        container = Blockly.Xml.utils.createElement('value');
-      } else if (input.type == Blockly.NEXT_STATEMENT) {
-        container = Blockly.Xml.utils.createElement('statement');
-      }
-      var shadow = input.connection.getShadowDom();
-      if (shadow && (!childBlock || !childBlock.isShadow())) {
-        container.appendChild(Blockly.Xml.cloneShadow_(shadow));
-      }
-      if (childBlock) {
-        container.appendChild(Blockly.Xml.blockToDom(childBlock, opt_noId));
-        empty = false;
-      }
-    }
-    container.setAttribute('name', input.name);
-    if (!empty) {
-      element.appendChild(container);
-    }
-  }
-  if (block.inputsInlineDefault != block.inputsInline) {
-    element.setAttribute('inline', block.inputsInline);
-  }
-  if (block.isCollapsed()) {
-    element.setAttribute('collapsed', true);
-  }
-  if (block.disabled) {
-    element.setAttribute('disabled', true);
-  }
-  if (!block.isDeletable() && !block.isShadow()) {
-    element.setAttribute('deletable', false);
-  }
-  if (!block.isMovable() && !block.isShadow()) {
-    element.setAttribute('movable', false);
-  }
-  if (!block.isEditable()) {
-    element.setAttribute('editable', false);
-  }
+	for (var i = 0, input; input = block.inputList[i]; i++) {
+		var container;
+		var empty = true;
+		if (input.type == Blockly.DUMMY_INPUT) {
+			continue;
+		} else {
+			var childBlock = input.connection.targetBlock();
+			if (input.type == Blockly.INPUT_VALUE) {
+				container = goog.dom.createDom('value');
+			} else if (input.type == Blockly.NEXT_STATEMENT) {
+				container = goog.dom.createDom('statement');
+			}
+			var shadow = input.connection.getShadowDom();
+			if (shadow && (!childBlock || !childBlock.isShadow())) {
+				// NOTES: Manually added in for override. If you update this function at any point, ensure the equivalent is commented out
+				// container.appendChild(Blockly.Xml.cloneShadow_(shadow));
+			}
+			if (childBlock) {
+				container.appendChild(Blockly.Xml.blockToDom(childBlock, opt_noId));
+				empty = false;
+			}
+		}
+		container.setAttribute('name', input.name);
+		if (!empty) {
+			element.appendChild(container);
+		}
+	}
+	if (block.inputsInlineDefault != block.inputsInline) {
+		element.setAttribute('inline', block.inputsInline);
+	}
+	if (block.isCollapsed()) {
+		element.setAttribute('collapsed', true);
+	}
+	if (block.disabled) {
+		element.setAttribute('disabled', true);
+	}
+	if (!block.isDeletable() && !block.isShadow()) {
+		element.setAttribute('deletable', false);
+	}
+	if (!block.isMovable() && !block.isShadow()) {
+		element.setAttribute('movable', false);
+	}
+	if (!block.isEditable()) {
+		element.setAttribute('editable', false);
+	}
 
-  var nextBlock = block.getNextBlock();
-  if (nextBlock) {
-    var container = Blockly.Xml.utils.createElement('next');
-    container.appendChild(Blockly.Xml.blockToDom(nextBlock, opt_noId));
-    element.appendChild(container);
-  }
-  var shadow = block.nextConnection && block.nextConnection.getShadowDom();
-  if (shadow && (!nextBlock || !nextBlock.isShadow())) {
-    container.appendChild(Blockly.Xml.cloneShadow_(shadow));
-  }
+	var nextBlock = block.getNextBlock();
+	if (nextBlock) {
+		var container = goog.dom.createDom('next', null,
+			Blockly.Xml.blockToDom(nextBlock, opt_noId));
+		element.appendChild(container);
+	}
+	var shadow = block.nextConnection && block.nextConnection.getShadowDom();
+	if (shadow && (!nextBlock || !nextBlock.isShadow())) {
+		container.appendChild(Blockly.Xml.cloneShadow_(shadow));
+	}
 
-  return element;
+	return element;
 };
 
 /**
@@ -602,7 +600,10 @@ Blockly.Xml.domToBlock = function(xmlBlock, workspace) {
  */
 Blockly.Xml.domToVariables = function(xmlVariables, workspace) {
   for (var i = 0, xmlChild; xmlChild = xmlVariables.childNodes[i]; i++) {
-    if (xmlChild.nodeType != Element.ELEMENT_NODE) {
+    // Element.ELEMENT_NODE isn't defined in nodejs. Use constant value
+    // instead:
+    // https://developer.mozilla.org/en-US/docs/Web/API/Node/nodeType
+    if (xmlChild.nodeType != 1) {
       continue;  // Skip text nodes.
     }
     var type = xmlChild.getAttribute('type');
